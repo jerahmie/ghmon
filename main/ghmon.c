@@ -23,7 +23,7 @@ static const char *TAG = "ghmon";
 #define I2C_MASTER_NUM I2C_NUMBER(CONFIG_I2C_MASTER_PORT_NUM)  /*!< I2C port number for master dev */
 #define I2C_MASTER_FREQ_HZ CONFIG_I2C_MASTER_FREQUENCY  /*!< I2C master clock frequency */
 #define I2C_MASTER_TX_BUF_DISABLE 0 /*!< I2C master doesn't need buffer */
-#define I2C_MASTER_RF_BUF_DISABLE 0 /*!< I2C master doesn't need buffer */
+#define I2C_MASTER_RX_BUF_DISABLE 0 /*!< I2C master doesn't need buffer */
 
 /* I2C Slave definitions */
 #define I2C_SLAVE_SCL_IO CONFIG_I2C_SLAVE_SCL
@@ -44,9 +44,15 @@ SemaphoreHandle_t print_mux = NULL;
 static esp_err_t i2c_master_init(void)
 {
     int i2c_master_port = I2C_MASTER_NUM;
-    printf("I2C master port number: %d\n", i2c_master_port);
-
-    return 0;
+    i2c_config_t conf_master;
+    conf_master.mode = I2C_MODE_MASTER;
+    conf_master.sda_io_num = I2C_MASTER_SDA_IO;
+    conf_master.sda_pullup_en = GPIO_PULLUP_ENABLE;
+    conf_master.scl_io_num = I2C_MASTER_SCL_IO;
+    conf_master.scl_pullup_en = GPIO_PULLUP_ENABLE;
+    conf_master.master.clk_speed = I2C_MASTER_FREQ_HZ;
+    i2c_param_config(i2c_master_port, &conf_master);
+    return i2c_driver_install(i2c_master_port, conf_master.mode, I2C_MASTER_RX_BUF_DISABLE, I2C_MASTER_TX_BUF_DISABLE, 0);
 }
 
 /**
@@ -55,22 +61,14 @@ static esp_err_t i2c_master_init(void)
  static esp_err_t i2c_slave_init(void)
  {
     int i2c_slave_port = I2C_SLAVE_NUM;
-    printf("I2C slave port number: %d\n", i2c_slave_port);
     i2c_config_t conf_slave;
     conf_slave.mode = I2C_MODE_SLAVE;
     conf_slave.sda_io_num = I2C_SLAVE_SDA_IO;
     conf_slave.sda_pullup_en = GPIO_PULLUP_ENABLE;
+    conf_slave.scl_io_num = I2C_SLAVE_SCL_IO;
+    conf_slave.scl_pullup_en = GPIO_PULLUP_ENABLE;
     conf_slave.slave.addr_10bit_en = 0;
     conf_slave.slave.slave_addr = ESP_SLAVE_ADDR;
-    /*
-    printf("i2c_slave_port: %d\n", i2c_slave_port);
-    printf("conf_slave.mode: %d\n", conf_slave.mode);
-    printf("conf_slave.sda_io_num: %d\n", conf_slave.sda_io_num);
-    printf("conf_slave.sda_pullup_en: %d\n", conf_slave.sda_pullup_en);
-    printf("conf_slave. mode: %d\n", conf_slave.mode);
-    printf("conf_slave.slave.addr_10bit_en: %d\n", conf_slave.slave.addr_10bit_en);
-    printf("conf_slave.slave.slave_addr: %d\n", conf_slave.slave.slave_addr);
-    */
     i2c_param_config(i2c_slave_port, &conf_slave);
     return i2c_driver_install(i2c_slave_port, conf_slave.mode, I2C_SLAVE_RX_BUF_LEN, I2C_SLAVE_TX_BUF_LEN, 0);
  }
